@@ -1,1 +1,8 @@
-Hello
+Haplotype Phasing from Genotypes with Missing Data
+
+Run from the code folder with command
+  
+  python unmask.py [example number] [block size]
+  
+where the example numbers are {1,2}
+and the block size specifies how many snps to consider in each block
