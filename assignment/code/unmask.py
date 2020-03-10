@@ -2,7 +2,7 @@ import numpy as np
 from scipy import stats
 import sys
 import time
-
+import multiprocessing as mp
 
 # Notation
 # K = num snps
@@ -171,8 +171,11 @@ def getHaplotypes(individuals, individual, H):
 # Ret:
 #   haplotypes, a (K x 2N) matrix of the haplotypes which explain the genotypes
 
-def phase(unmasked):
+def phase(block):
     # First sort the individuals by their heterozygous counts
+
+    i, unmasked = block
+
     individuals = unmasked.transpose()
     sorted_individuals = sort(individuals)
     # sorted_individuals = [(individuals[i], i) for i in range(len(individuals))]
@@ -224,7 +227,7 @@ def phase(unmasked):
     output = np.array(output)
     output = output.transpose()
 
-    return output
+    return i, output
 
 
 # Sorts the genotype data in terms of number of heterozygous
@@ -245,6 +248,11 @@ def sort(individuals):
 
     return sorted_individuals
 
+
+# Callback for async function
+block_haplotypes = []
+def collect_haplotypes(result):
+    block_haplotypes.append(result)
 
 def main():
     input_path = '../data/example_data_' + sys.argv[1] + '_masked.txt'
@@ -292,17 +300,21 @@ def main():
 
     num_blocks = int((len(unmasked_data) / BLOCK_SIZE) + 1)
 
-    all_haplotypes = phase(unmasked_data[:BLOCK_SIZE])
-    #print(all_haplotypes[:,[6,7]])
+    blocks = [(i, unmasked_data[i * BLOCK_SIZE : (i + 1) * BLOCK_SIZE]) for i in range(num_blocks)]
 
-    for i in range(1, num_blocks):
-        block = unmasked_data[i * BLOCK_SIZE : (i + 1) * BLOCK_SIZE]
-        haplotypes = phase(block)
-        #print(haplotypes[:,[6,7]])
-        all_haplotypes = np.concatenate((all_haplotypes, haplotypes), axis=0)
+    # Initialize the multiprocessing pool
+    pool = mp.Pool(mp.cpu_count())
 
-    print(all_haplotypes[:,[6,7]])   
-    print(all_haplotypes.shape)
+    for block in blocks:
+        pool.apply_async(phase, args=(block,), callback=collect_haplotypes)
+
+    #block_haplotypes = [(i, pool.apply_async(phase, args=(blocks[i],))) for i in range(num_blocks)]
+    pool.close()
+    pool.join()
+
+    block_haplotypes.sort()
+    all_haplotypes = [block_haplotype[1] for block_haplotype in block_haplotypes]
+    all_haplotypes = np.vstack(all_haplotypes)
 
     end = time.time()
     print('Phased in ' + str(end - start) + ' seconds')
