@@ -285,7 +285,7 @@ def main():
     unmasked_data = unmasked_data.astype(int)
     
     # Define a blocksize (hyperparamter which changes)
-    BLOCK_SIZE = 10
+    BLOCK_SIZE = int(sys.argv[2])
 
     start = time.time()
     print('Starting Phasing')
