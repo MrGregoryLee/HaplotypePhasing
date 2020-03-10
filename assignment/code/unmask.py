@@ -138,7 +138,7 @@ def isValidHaplotype(haplotype):
 #   h1, h2: a haplotype phase which is consistent with the individual
 #   H: the list of all known haplotypes
 def getHaplotypes(individuals, individual, H):
-    '''
+    
     # First check if it can be constructed from haplotypes in H
     for h1 in H:
         for h2 in H:
@@ -153,7 +153,7 @@ def getHaplotypes(individuals, individual, H):
         if isValidHaplotype(complement):
             H = np.append(H, [complement], axis=0)
             return (h, complement), H
-    '''
+    
 
     # Finally, if we cannot find a complement, must generate two new haplotypes
     h1 = getInitialHaplotypes(individuals, individual)[0]
@@ -206,8 +206,9 @@ def phase(unmasked):
     print(phases[0][0][1][:10])
     print(sorted_individuals[0][0][:10])
     '''
-    print('length of H')
-    print(len(H))
+    
+    #print('length of H')
+    #print(len(H))
 
     # Now that we have phases, format them as output
     # Resort back into the original order
@@ -250,7 +251,7 @@ def main():
     output_path = '../output/example_data_' + sys.argv[1] + '_unmasked.txt'
     truth_path = '../data/example_data_' + sys.argv[1] + '_sol.txt'
 
-    input_path = '../data/test_data_masked.txt'
+    #input_path = '../data/test_data_masked.txt'
 
     '''
     # Read input
@@ -274,26 +275,50 @@ def main():
 
     # Now phase unmasked data
 
+    
     # Change this later but for now just grab input from a file
     unmasked_path = '../output/example_data_' + sys.argv[1] + '_unmasked.txt'
-    unmasked_path = '../output/test_data_unmasked.txt'
+    #unmasked_path = '../output/test_data_unmasked.txt'
     unmasked_data = readInput(unmasked_path)
 
     # For now, convert to int
     unmasked_data = unmasked_data.astype(int)
+    
+    # Define a blocksize (hyperparamter which changes)
+    BLOCK_SIZE = 10
 
     start = time.time()
     print('Starting Phasing')
 
-    haplotypes = phase(unmasked_data)
+    num_blocks = int((len(unmasked_data) / BLOCK_SIZE) + 1)
+
+    all_haplotypes = phase(unmasked_data[:BLOCK_SIZE])
+    #print(all_haplotypes[:,[6,7]])
+
+    for i in range(1, num_blocks):
+        block = unmasked_data[i * BLOCK_SIZE : (i + 1) * BLOCK_SIZE]
+        haplotypes = phase(block)
+        #print(haplotypes[:,[6,7]])
+        all_haplotypes = np.concatenate((all_haplotypes, haplotypes), axis=0)
+
+    print(all_haplotypes[:,[6,7]])   
+    print(all_haplotypes.shape)
 
     end = time.time()
     print('Phased in ' + str(end - start) + ' seconds')
+    
 
 
-    # truth_data = readInput(truth_path)
-    # truth_data = truth_data.astype(int)
-    # countHaplotypes(truth_data)
+    '''
+    # Read truth to check
+    truth_data = readInput(truth_path)
+
+    # Only take the first block (10 snps)
+    truth_data = truth_data[:10]
+
+    truth_data = truth_data.astype(int)
+    countHaplotypes(truth_data)
+    '''
 
     # Write output
 
@@ -303,14 +328,13 @@ def main():
     writeOutput(output_path, unmasked_data)
     '''
 
-    output_path = '../output/test_data_sol.txt'
-    writeOutput(output_path, haplotypes)
+    #output_path = '../output/test_data_sol.txt'
+    #writeOutput(output_path, haplotypes)
 
 
-    '''
-    output_path = '../output/example_data_' + sys.argv[1] + '_sol.txt'
-    writeOutput(output_path, haplotypes)
-    '''
+    output_path = '../output/example_data_' + sys.argv[1] + '_block_' + str(BLOCK_SIZE) + '_sol.txt'
+    writeOutput(output_path, all_haplotypes)
+    
 
     print('DONE')
 
