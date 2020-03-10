@@ -6,3 +6,10 @@ Run from the code folder with command
   
 where the example numbers are {1,2}
 and the block size specifies how many snps to consider in each block
+
+For example, running the command
+  python unmask.py 1 10 will produce output
+  ../output/example_data_1_block_10_sol.txt
+
+Then you can test the accuracy with
+  Rscript calculate_switch_accuracy.R ../data/example_data_1_sol.txt ../output/example_data_1_block_10_sol.txt
